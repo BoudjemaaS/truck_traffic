@@ -13,7 +13,7 @@ to setup
   resize-world (- largeur) largeur (- hauteur) hauteur
 
   set-patch-size 10
-  set-patches
+  set-nodes
 
   reset-ticks
 
@@ -22,23 +22,43 @@ to setup
 end
 
 
-to set-patches
+to set-nodes
 
-  let set-nodes 0
+  let created-nodes 0
 
-  while [set-nodes < num-nodes][
+  while [created-nodes < num-nodes][
 
     let temp_px (- largeur + random(2 * largeur))
     let temp_py (- hauteur + random(2 * hauteur))
 
+    let count-turtles 0
+
+
     ask patch temp_px temp_py [
-      if (count patches in-radius min-distance with [pcolor = red] = 0)[
-        set pcolor red
-        set set-nodes set-nodes + 1
-      ]
+      set count-turtles (count turtles in-radius min-distance)
     ]
 
-  ]
+      if (count-turtles = 0)[
+        create-turtles 1 [
+          set xcor temp_px
+          set ycor temp_py
+          set shape "house"
+          set size 3
+          set color red
+        ]
+
+
+
+      ask turtle (count turtles - 1)[
+        ask other turtles in-radius max-distance [create-link-with turtle (count turtles - 1)[set color white]]
+        set created-nodes created-nodes + 1
+      ]
+      ]
+
+    ]
+
+
+
 
 
 end
@@ -57,8 +77,8 @@ GRAPHICS-WINDOW
 1
 1
 0
-1
-1
+0
+0
 1
 -30
 30
@@ -104,7 +124,7 @@ INPUTBOX
 1171
 340
 min-distance
-30.0
+10.0
 1
 0
 Number
@@ -115,10 +135,10 @@ INPUTBOX
 1282
 558
 max-distance
-NIL
+25.0
 1
 0
-String
+Number
 
 @#$#@#$#@
 ## WHAT IS IT?
