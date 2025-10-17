@@ -49,14 +49,15 @@ to set-nodes
         create-nodes 1 [
           set xcor temp_px
           set ycor temp_py
-          set shape "flag"
-          set size 5
+          set shape "square"
+          set size 3
 
 
           let set-type random (3)
-          if set-type = 0 [set color blue]
-          if set-type = 1 [set color green  ]
-          if set-type = 2 [set color red]
+          show set-type
+          if set-type = 0 [set color blue ask [neighbors] of patch xcor ycor [ask neighbors [set pcolor blue]]]
+          if set-type = 1 [set color green ask [neighbors] of patch xcor ycor [ask neighbors [set pcolor green]]]
+          if set-type = 2 [set color red ask [neighbors] of patch xcor ycor [ask neighbors [set pcolor red]]]
 
         ]
     ]
@@ -93,11 +94,12 @@ to set-trucks
     setxy [xcor] of choosen-node [ycor] of choosen-node
 
     set shape "truck"
-    set size 6
+    set size 6.5
     set color white
+    if [color] of choosen-node = green [set speed 15]
 
     clear-output
-    show list-nodes
+
   ]
 
 end
