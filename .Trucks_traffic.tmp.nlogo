@@ -83,7 +83,7 @@ to set-trucks
   let list-nodes []
   create-trucks num-trucks[
 
-
+    let list-nodes []
     let choosen-node one-of nodes
 
     while [member? choosen-node (list-nodes)][set choosen-node one-of nodes]
