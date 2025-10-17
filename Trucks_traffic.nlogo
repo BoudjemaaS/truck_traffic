@@ -8,7 +8,7 @@ globals [
 breed [trucks truck]
 breed [nodes node]
 
-trucks-own [speed]
+trucks-own [speed destination]
 links-own [open]
 
 
@@ -54,7 +54,7 @@ to set-nodes
 
 
           let set-type random (3)
-          show set-type
+
           if set-type = 0 [set color blue ask [neighbors] of patch xcor ycor [ask neighbors [set pcolor blue]]]
           if set-type = 1 [set color green ask [neighbors] of patch xcor ycor [ask neighbors [set pcolor green]]]
           if set-type = 2 [set color red ask [neighbors] of patch xcor ycor [ask neighbors [set pcolor red]]]
@@ -85,22 +85,44 @@ to set-trucks
   create-trucks num-trucks[
 
 
-    let choosen-node one-of nodes
+    let choosen-source one-of nodes
+    while [member? choosen-source (list-nodes)][set choosen-source one-of nodes]
+    set list-nodes lput choosen-source list-nodes
+    setxy [xcor] of choosen-source [ycor] of choosen-source
 
-    while [member? choosen-node (list-nodes)][set choosen-node one-of nodes]
+    let choosen-dest one-of nodes
+    while [choosen-dest = choosen-source] [set choosen-dest one-of nodes]
 
-    set list-nodes lput choosen-node list-nodes
-
-    setxy [xcor] of choosen-node [ycor] of choosen-node
 
     set shape "truck"
     set size 6.5
     set color white
-    if [color] of choosen-node = green [set speed 15]
-
-    clear-output
+    set destination choosen-dest
 
   ]
+
+end
+
+
+to go
+
+  let mission-end 0
+  ask trucks[
+
+    if [pcolor] of patch xcor ycor = green [set speed 1.5]
+    if [pcolor] of patch xcor ycor = blue [set speed 2]
+    if [pcolor] of patch xcor ycor = red [set speed 1]
+
+
+
+    ifelse distance destination >= 1 [
+      face destination
+      fd speed
+    ]
+    [set mission-end  mission-end + 1]
+
+  ]
+  if mission-end = num-trucks [stop]
 
 end
 @#$#@#$#@
@@ -191,6 +213,23 @@ num-trucks
 1
 0
 Number
+
+BUTTON
+1128
+187
+1191
+220
+NIL
+go
+T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
