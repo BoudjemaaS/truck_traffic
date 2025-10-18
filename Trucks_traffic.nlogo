@@ -1,6 +1,6 @@
+extensions [table]
 globals [
-  largeur
-  hauteur
+
   num-iterations
   strat
 ]
@@ -10,13 +10,14 @@ breed [nodes node]
 
 trucks-own [speed destination]
 links-own [open]
+nodes-own [id]
 
 
 
 to setup
    clear-all
-  set largeur 60
-  set hauteur 60
+  ;set largeur 80
+  ;set hauteur 80
 
   resize-world (- largeur) largeur (- hauteur) hauteur
 
@@ -31,7 +32,7 @@ end
 to set-nodes
 
   let created-nodes 0
-
+  let id-num 0
   while [created-nodes < num-nodes][
 
     let temp_px (- largeur + random(2 * largeur))
@@ -51,6 +52,8 @@ to set-nodes
           set ycor temp_py
           set shape "square"
           set size 3
+          set id id-num
+          set label id-num
 
 
           let set-type random (3)
@@ -60,6 +63,8 @@ to set-nodes
           if set-type = 2 [set color red ask [neighbors] of patch xcor ycor [ask neighbors [set pcolor red]]]
 
         ]
+      set created-nodes created-nodes + 1
+      set id-num id-num + 1
     ]
 
       ask turtle (count nodes - 1)[
@@ -75,7 +80,7 @@ to set-nodes
           ]
 
       ]
-      set created-nodes created-nodes + 1
+
       ]
     ]
 end
@@ -94,14 +99,96 @@ to set-trucks
     while [choosen-dest = choosen-source] [set choosen-dest one-of nodes]
 
 
-    set shape "truck"
+    set shape "arrow"
     set size 6.5
     set color white
     set destination choosen-dest
 
+
+  ]
+
+  create-turtles 1 [
+    let desti [destination] of one-of trucks
+      setxy  [xcor] of desti [ycor] of desti
+      set shape "flag"
+      set size 4
+      set color white
+    ]
+
+
+end
+
+
+to find-path
+
+  ask trucks [
+
+    let pos-actu one-of nodes-on patch xcor ycor
+    let dest-voisines sort [link-neighbors] of pos-actu
+
+    ;face one-of dest-voisines
+    ;show dest-voisines
+  ]
+end
+
+
+
+to build-chemin [parent cible]
+
+  let chemin []
+  let courant cible
+  show "entrée"
+  while [courant != Nobody] [
+
+    set chemin fput courant chemin
+    set courant  one-of nodes with [id = table:get parent [id] of courant]
+    show chemin
+
+  ]
+  show "sortie"
+
+end
+
+
+
+to BFS
+
+  ask trucks [
+    let pos-actu one-of nodes-on patch xcor ycor
+
+    let file []
+    let visite  []
+    let parents table:make
+
+    set file lput pos-actu file
+    set visite lput pos-actu visite
+    table:put parents [id] of pos-actu Nobody
+
+    while [length file > 0] [
+
+      let U first file
+      ;show U
+      ;show "##########################"
+      ;show file
+      set file but-first file
+
+      if U = destination [build-chemin parents destination stop]
+
+      foreach (sort [link-neighbors] of U)   [v ->
+        if (not member? v (visite))
+          [set visite lput v visite
+        table:put parents [id] of v [id] of U
+          set file lput v file
+        ]
+      ]
+    ]
+    show  "chemin non ntrouvé"
   ]
 
 end
+
+
+
 
 
 to go
@@ -127,10 +214,10 @@ to go
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-109
-83
-843
-818
+32
+30
+826
+825
 -1
 -1
 6.0
@@ -143,10 +230,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--60
-60
--60
-60
+-65
+65
+-65
+65
 0
 0
 1
@@ -154,10 +241,10 @@ ticks
 30.0
 
 BUTTON
-1571
-78
-1634
-111
+1283
+167
+1346
+200
 NIL
 setup
 NIL
@@ -171,32 +258,32 @@ NIL
 1
 
 INPUTBOX
-1699
-275
-1854
-335
+1208
+289
+1363
+349
 num-nodes
-50.0
+30.0
 1
 0
 Number
 
 INPUTBOX
-1379
-228
-1534
-288
+1373
+226
+1528
+286
 min-distance
-10.0
+15.0
 1
 0
 Number
 
 INPUTBOX
-1404
-446
-1645
-506
+1371
+294
+1612
+354
 max-distance
 50.0
 1
@@ -204,24 +291,80 @@ max-distance
 Number
 
 INPUTBOX
-1061
-308
-1216
-368
+1209
+224
+1364
+284
 num-trucks
-5.0
+1.0
 1
 0
 Number
 
 BUTTON
-1128
-187
-1191
-220
+1205
+167
+1268
+200
 NIL
 go
 T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+INPUTBOX
+1172
+77
+1327
+137
+largeur
+65.0
+1
+0
+Number
+
+INPUTBOX
+1332
+75
+1487
+135
+hauteur
+65.0
+1
+0
+Number
+
+BUTTON
+945
+151
+1027
+184
+NIL
+find-path
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+1135
+411
+1198
+444
+NIL
+BFS
+NIL
 1
 T
 OBSERVER
