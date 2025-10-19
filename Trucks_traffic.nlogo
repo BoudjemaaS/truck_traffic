@@ -3,10 +3,12 @@ globals [
 
   num-iterations
   strat
+  BFS-done
 ]
 
 breed [trucks truck]
 breed [nodes node]
+breed [flags flag]
 
 trucks-own [speed destination chemin]
 links-own [open]
@@ -24,7 +26,7 @@ to setup
   set-patch-size 6
   set-nodes
   set-trucks
-
+  BFS
   reset-ticks
 end
 
@@ -53,7 +55,6 @@ to set-nodes
           set shape "square"
           set size 3
           set id id-num
-          set label id-num
 
 
           let set-type random (3)
@@ -87,6 +88,7 @@ end
 
 to set-trucks
   let list-nodes []
+  let t num-nodes
   create-trucks num-trucks[
 
 
@@ -99,39 +101,26 @@ to set-trucks
     while [choosen-dest = choosen-source] [set choosen-dest one-of nodes]
 
 
-    set shape "arrow"
+    set shape "truck"
     set size 6.5
     set color white
     set destination choosen-dest
 
-
   ]
+  create-flags num-trucks [
 
-  create-turtles 1 [
-    let desti [destination] of one-of trucks
+    let desti [destination] of truck t
       setxy  [xcor] of desti [ycor] of desti
       set shape "flag"
-      set size 4
+      set size 3
       set color white
+      set t t + 1
+
     ]
 
 
-end
-
-
-to find-path
-
-  ask trucks [
-
-    let pos-actu one-of nodes-on patch xcor ycor
-    let dest-voisines sort [link-neighbors] of pos-actu
-
-    ;face one-of dest-voisines
-    ;show dest-voisines
-  ]
 
 end
-
 
 
 to-report build-chemin [parent cible]
@@ -198,27 +187,12 @@ to BFS
 end
 
 
-to go-to-dest [target]
-
-
-  if (distance target >= 1) [
-
-      fd speed
-    ]
-  stop
-
-
-end
-
-
-
-
-
 
 to go
 
   let mission-end 0
   ask trucks[
+
 
     if [pcolor] of patch xcor ycor = green [set speed 1.5]
     if [pcolor] of patch xcor ycor = blue [set speed 2]
@@ -235,27 +209,9 @@ to go
     ]
     [set mission-end mission-end + 1]
 
-
-   ; foreach chemin [dest ->
-    ;ifelse distance dest >= 1 [
-   ;   face dest
-   ;   fd speed
-   ; ]
-  ;  [
-  ;      ifelse (length chemin != 0)
-
-    ;      [set dest first chemin
-   ;       set chemin but-first chemin
-   ;       show (list chemin length chemin)]
-
-   ;      [set mission-end  mission-end + 1]
-
-  ;  ]
-
-  ;]
-  show mission-end
   ]
   if mission-end = num-trucks [stop]
+
 
 end
 @#$#@#$#@
@@ -385,40 +341,6 @@ hauteur
 1
 0
 Number
-
-BUTTON
-945
-151
-1027
-184
-NIL
-find-path
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-1135
-411
-1198
-444
-NIL
-BFS
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
 
 @#$#@#$#@
 ## WHAT IS IT?
