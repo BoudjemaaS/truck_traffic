@@ -8,7 +8,7 @@ globals [
 breed [trucks truck]
 breed [nodes node]
 
-trucks-own [speed destination]
+trucks-own [speed destination chemin]
 links-own [open]
 nodes-own [id]
 
@@ -129,23 +129,25 @@ to find-path
     ;face one-of dest-voisines
     ;show dest-voisines
   ]
+
 end
 
 
 
-to build-chemin [parent cible]
+to-report build-chemin [parent cible]
 
-  let chemin []
+  let built-chemin []
   let courant cible
-  show "entrée"
+
   while [courant != Nobody] [
 
-    set chemin fput courant chemin
+    set built-chemin fput courant built-chemin
     set courant  one-of nodes with [id = table:get parent [id] of courant]
-    show chemin
-
   ]
-  show "sortie"
+  show built-chemin
+  report built-chemin
+
+
 
 end
 
@@ -160,6 +162,7 @@ to BFS
     let visite  []
     let parents table:make
 
+
     set file lput pos-actu file
     set visite lput pos-actu visite
     table:put parents [id] of pos-actu Nobody
@@ -172,8 +175,9 @@ to BFS
       ;show file
       set file but-first file
 
-      if U = destination [build-chemin parents destination stop]
+      ifelse (U = destination) [set chemin build-chemin parents destination stop]
 
+      [
       foreach (sort [link-neighbors] of U)   [v ->
         if (not member? v (visite))
           [set visite lput v visite
@@ -181,11 +185,31 @@ to BFS
           set file lput v file
         ]
       ]
+
     ]
-    show  "chemin non ntrouvé"
+
+    ]
+    set chemin []
+    show  "chemin non trouvé"
+
   ]
 
+
 end
+
+
+to go-to-dest [target]
+
+
+  if (distance target >= 1) [
+
+      fd speed
+    ]
+  stop
+
+
+end
+
 
 
 
@@ -200,14 +224,36 @@ to go
     if [pcolor] of patch xcor ycor = blue [set speed 2]
     if [pcolor] of patch xcor ycor = red [set speed 1]
 
-
-
-    ifelse distance destination >= 1 [
+    ifelse (chemin != [])[
+      set destination first chemin
       face destination
-      fd speed
-    ]
-    [set mission-end  mission-end + 1]
 
+      ifelse (distance destination >= 1) [
+        fd speed
+      ]
+      [set chemin but-first chemin]
+    ]
+    [set mission-end mission-end + 1]
+
+
+   ; foreach chemin [dest ->
+    ;ifelse distance dest >= 1 [
+   ;   face dest
+   ;   fd speed
+   ; ]
+  ;  [
+  ;      ifelse (length chemin != 0)
+
+    ;      [set dest first chemin
+   ;       set chemin but-first chemin
+   ;       show (list chemin length chemin)]
+
+   ;      [set mission-end  mission-end + 1]
+
+  ;  ]
+
+  ;]
+  show mission-end
   ]
   if mission-end = num-trucks [stop]
 
@@ -296,7 +342,7 @@ INPUTBOX
 1364
 284
 num-trucks
-1.0
+2.0
 1
 0
 Number
