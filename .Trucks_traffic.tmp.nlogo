@@ -9,13 +9,14 @@ globals [
   time-tab
   debut
   time-travel
+  fails
 ]
 
 breed [trucks truck]
 breed [nodes node]
 breed [flags flag]
 
-trucks-own [speed destination chemin source color1 color2]
+trucks-own [speed destination chemin source color1 color2 test-fail failed]
 links-own [open]
 nodes-own [id]
 
@@ -227,6 +228,13 @@ to start
       if (n2 != nobody) [ask n2 [create-link-with n1 [set color blue]] ]
     ]
 
+    ask trucks [
+      set test-fail false
+      if random 100 < 50 [set test-fail true ]
+    ]
+
+
+
     set do-iter true
     set-target
 
@@ -248,6 +256,9 @@ to start
 
 end
 
+
+
+
 to go
 
   let mission-end 0
@@ -256,39 +267,50 @@ to go
 
   ask trucks[
 
-    set color2 [pcolor] of patch xcor ycor
+      ifelse (test-fail = false) [
 
+      set color2 [pcolor] of patch xcor ycor
 
-    if [pcolor] of patch xcor ycor = green [set speed 15e-6]
+      if [pcolor] of patch xcor ycor = green [set speed 15e-6]
 
-    if [pcolor] of patch xcor ycor = blue [
+      if [pcolor] of patch xcor ycor = blue [
 
-      if ((random 100 < 0) and color1 = black) [show "slow" set time-travel time-travel * 1.3]
-      set speed 30e-6
-    ]
-
-    if [pcolor] of patch xcor ycor = red [set speed 20e-6]
-    if [pcolor] of patch xcor ycor = black [set speed 90e-6]
-
-    ifelse (chemin != [])[
-      set destination first chemin
-      face destination
-
-      ifelse (distance destination >= 1) [
-        fd speed
-        set color1 color2
-        set color2 [pcolor] of patch xcor ycor
+        if ((random 100 < 10) and color1 = black) [show "slow" set time-travel time-travel * 1.3]
+        set speed 30e-6
       ]
-      [set chemin but-first chemin]
-    ]
-    [set mission-end mission-end + 1
 
+      if [pcolor] of patch xcor ycor = red [set speed 20e-6]
+      if [pcolor] of patch xcor ycor = black [set speed 90e-6]
+
+
+
+
+      ifelse (chemin != [])[
+        set destination first chemin
+        face destination
+
+        ifelse (distance destination >= 1) [
+          fd speed
+          set color1 color2
+          set color2 [pcolor] of patch xcor ycor
+        ]
+        [set chemin but-first chemin]
+      ]
+
+
+
+
+      [set mission-end mission-end + 1]
     ]
 
-  ]
-  if mission-end = num-trucks [
-    set do-iter false
-    set time-travel timer - debut
+    [if (failed = false) [show "fail" set mission-end mission-end + 1 set failed true]]
+
+    if mission-end = num-trucks [
+      set do-iter false
+      set time-travel timer - debut
+    ]
+
+
   ]
 
 
