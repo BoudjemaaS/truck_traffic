@@ -4,6 +4,7 @@ globals [
   num-iterations
   strat
   BFS-done
+  created-nodes
 ]
 
 breed [trucks truck]
@@ -18,22 +19,21 @@ nodes-own [id]
 
 to setup
    clear-all
-  ;set largeur 80
-  ;set hauteur 80
-  set BFS-done false
+
   resize-world (- largeur) largeur (- hauteur) hauteur
 
   set-patch-size 6
+  set created-nodes 0
   set-nodes
   set-trucks
+  BFS
 
-  reset-ticks
 end
 
 
 to set-nodes
 
-  let created-nodes 0
+
   let id-num 0
   while [created-nodes < num-nodes][
 
@@ -84,6 +84,9 @@ to set-nodes
 
       ]
     ]
+  ask nodes with [length (sort [link-neighbors] of self) = 0] [create-link-with min-one-of other nodes [distance myself]]
+
+
 end
 
 to set-trucks
@@ -144,7 +147,7 @@ end
 
 to BFS
 
-  ;ask trucks [
+  ask trucks [
     let pos-actu one-of nodes-on patch xcor ycor
 
     let file []
@@ -192,9 +195,6 @@ to go
 
   let mission-end 0
   ask trucks[
-
-    if (BFS-done = false)
-    [BFS set BFS-done true]
 
 
     if [pcolor] of patch xcor ycor = green [set speed 1.5]
@@ -268,7 +268,7 @@ INPUTBOX
 1363
 349
 num-nodes
-30.0
+60.0
 1
 0
 Number
@@ -279,7 +279,7 @@ INPUTBOX
 1528
 286
 min-distance
-15.0
+10.0
 1
 0
 Number
@@ -290,7 +290,7 @@ INPUTBOX
 1612
 354
 max-distance
-50.0
+30.0
 1
 0
 Number
