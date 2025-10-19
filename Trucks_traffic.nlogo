@@ -1,17 +1,21 @@
 extensions [table]
 globals [
-
-  num-iterations
   strat
   BFS-done
   created-nodes
+  do-iter
+  missions
+  mean-time
+  time-tab
+  debut
+  time-travel
 ]
 
 breed [trucks truck]
 breed [nodes node]
 breed [flags flag]
 
-trucks-own [speed destination chemin]
+trucks-own [speed destination chemin source color1 color2]
 links-own [open]
 nodes-own [id]
 
@@ -24,6 +28,8 @@ to setup
 
   set-patch-size 6
   set created-nodes 0
+  set missions []
+  set time-tab []
   set-nodes
   set-trucks
   BFS
@@ -37,8 +43,8 @@ to set-nodes
   let id-num 0
   while [created-nodes < num-nodes][
 
-    let temp_px (- largeur + random(2 * largeur))
-    let temp_py (- hauteur + random(2 * hauteur))
+    let temp_px (- largeur + 3 + random(2 * (largeur - 3)))
+    let temp_py (- hauteur + 3  + random(2 * (hauteur - 3)))
 
     let count-nodes 0
 
@@ -59,9 +65,9 @@ to set-nodes
 
           let set-type random (3)
 
-          if set-type = 0 [set color blue ask [neighbors] of patch xcor ycor [ask neighbors [set pcolor blue]]]
-          if set-type = 1 [set color green ask [neighbors] of patch xcor ycor [ask neighbors [set pcolor green]]]
-          if set-type = 2 [set color red ask [neighbors] of patch xcor ycor [ask neighbors [set pcolor red]]]
+          if set-type = 0 [set color blue ask [neighbors] of patch xcor ycor [ask neighbors [set pcolor blue]]] ;citie
+          if set-type = 1 [set color green ask [neighbors] of patch xcor ycor [ask neighbors [set pcolor green]]] ;border
+          if set-type = 2 [set color red ask [neighbors] of patch xcor ycor [ask neighbors [set pcolor red]]] ;site
 
         ]
       set created-nodes created-nodes + 1
@@ -72,44 +78,41 @@ to set-nodes
         ask other nodes in-radius max-distance [
           let do-we-link random 4
           if do-we-link = 0[
-            create-link-with turtle (count nodes - 1)[
-              let is-open random 1000
-              ifelse is-open < 8
-              [set open false set color red]
-              [set open true set color white]
-            ]
+            create-link-with turtle (count nodes - 1)[]
           ]
 
       ]
 
       ]
     ]
-  ask nodes with [length (sort [link-neighbors] of self) = 0] [create-link-with min-one-of other nodes [distance myself]]
+  ask nodes with [length (sort [link-neighbors] of self) = 0] [
+    create-link-with min-one-of other nodes [distance myself]]
+
+  ask links [
+    let is-open random 1000
+    ifelse is-open < 8
+      [set open false set color red]
+      [set open true set color white]]
+
 
 
 end
 
-to set-trucks
-  let list-nodes []
-  let t num-nodes
-  create-trucks num-trucks[
 
+to set-target
+  ask flags [die]
+  ask trucks[
 
-    let choosen-source one-of nodes
-    while [member? choosen-source (list-nodes)][set choosen-source one-of nodes]
-    set list-nodes lput choosen-source list-nodes
-    setxy [xcor] of choosen-source [ycor] of choosen-source
+    let truck-source source
+    set destination one-of nodes with [self != truck-source]
+    while [member? (list source destination) (missions)][set destination one-of nodes with [self != truck-source]]
+    set missions lput  (list source destination) missions
 
-    let choosen-dest one-of nodes
-    while [choosen-dest = choosen-source] [set choosen-dest one-of nodes]
+    set source one-of nodes-on min-one-of nodes [distance myself]
 
-
-    set shape "truck"
-    set size 6.5
-    set color white
-    set destination choosen-dest
 
   ]
+  let t num-nodes
   create-flags num-trucks [
 
     let desti [destination] of truck t
@@ -118,8 +121,33 @@ to set-trucks
       set size 3
       set color white
       set t t + 1
-
     ]
+
+   BFS
+
+end
+
+
+
+to set-trucks
+  let list-nodes []
+
+
+  create-trucks num-trucks[
+
+    set source one-of nodes with [not member? self (list-nodes)]
+    set list-nodes lput source list-nodes
+    setxy [xcor] of source [ycor] of source
+
+
+    set shape "truck"
+    set size 6.5
+    set color white
+
+  ]
+  set-target
+
+
 
 
 
@@ -136,7 +164,7 @@ to-report build-chemin [parent cible]
     set built-chemin fput courant built-chemin
     set courant  one-of nodes with [id = table:get parent [id] of courant]
   ]
-  show built-chemin
+
   report built-chemin
 
 
@@ -148,23 +176,21 @@ end
 to BFS
 
   ask trucks [
-    let pos-actu one-of nodes-on patch xcor ycor
+    ;set source one-of nodes-on patch xcor ycor
 
     let file []
     let visite  []
     let parents table:make
 
 
-    set file lput pos-actu file
-    set visite lput pos-actu visite
-    table:put parents [id] of pos-actu Nobody
+    set file lput source file
+    set visite lput source visite
+    table:put parents [id] of source Nobody
 
     while [length file > 0] [
 
       let U first file
-      ;show U
-      ;show "##########################"
-      ;show file
+
       set file but-first file
 
       ifelse (U = destination) [set chemin build-chemin parents destination stop]
@@ -191,17 +217,58 @@ to BFS
 
 end
 
+to start
 
+  repeat num-iter [
+
+    if random 100 = 0 [
+      let n1 one-of nodes
+      let n2 one-of nodes with [distance n1 >= min-distance and distance n1 <= max-distance and self != n1 and [(link-with n1)] of self = nobody]
+      if (n2 != nobody) [ask n2 [create-link-with n1 [set color blue]] ]
+    ]
+
+    set do-iter true
+    set-target
+
+    reset-timer
+    set debut timer
+
+
+    while [do-iter = true][
+      go
+    ]
+
+    set time-tab lput (time-travel) (time-tab)
+    set time-travel 0
+
+
+
+  ]
+  show time-tab
+
+end
 
 to go
 
   let mission-end 0
+
+
+
   ask trucks[
 
+    set color2 [pcolor] of patch xcor ycor
 
-    if [pcolor] of patch xcor ycor = green [set speed 1.5]
-    if [pcolor] of patch xcor ycor = blue [set speed 2]
-    if [pcolor] of patch xcor ycor = red [set speed 1]
+
+    if [pcolor] of patch xcor ycor = green [set speed 15e-6]
+
+    if [pcolor] of patch xcor ycor = blue [
+
+      if ((random 100 < 10) and color1 = black) [show "slow" set time-travel time-travel * 1.3]
+      set speed 30e-6
+    ]
+
+    if [pcolor] of patch xcor ycor = red [set speed 20e-6]
+    if [pcolor] of patch xcor ycor = black [set speed 90e-6]
 
     ifelse (chemin != [])[
       set destination first chemin
@@ -209,13 +276,20 @@ to go
 
       ifelse (distance destination >= 1) [
         fd speed
+        set color1 color2
+        set color2 [pcolor] of patch xcor ycor
       ]
       [set chemin but-first chemin]
     ]
-    [set mission-end mission-end + 1]
+    [set mission-end mission-end + 1
+
+    ]
 
   ]
-  if mission-end = num-trucks [stop]
+  if mission-end = num-trucks [
+    set do-iter false
+    set time-travel timer - debut
+  ]
 
 
 end
@@ -303,7 +377,7 @@ INPUTBOX
 1364
 284
 num-trucks
-1.0
+2.0
 1
 0
 Number
@@ -346,6 +420,51 @@ hauteur
 1
 0
 Number
+
+INPUTBOX
+1035
+226
+1190
+286
+num-iter
+2.0
+1
+0
+Number
+
+BUTTON
+1373
+506
+1461
+539
+NIL
+set-target
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+1188
+549
+1251
+582
+NIL
+start
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -639,19 +758,19 @@ Polygon -7500403 true true 150 30 15 255 285 255
 Polygon -16777216 true false 151 99 225 223 75 224
 
 truck
-false
+true
 0
-Rectangle -7500403 true true 4 45 195 187
-Polygon -7500403 true true 296 193 296 150 259 134 244 104 208 104 207 194
-Rectangle -1 true false 195 60 195 105
-Polygon -16777216 true false 238 112 252 141 219 141 218 112
-Circle -16777216 true false 234 174 42
-Rectangle -7500403 true true 181 185 214 194
-Circle -16777216 true false 144 174 42
-Circle -16777216 true false 24 174 42
-Circle -7500403 false true 24 174 42
-Circle -7500403 false true 144 174 42
-Circle -7500403 false true 234 174 42
+Rectangle -7500403 true true 113 105 255 296
+Polygon -7500403 true true 107 4 150 4 166 41 196 56 196 92 106 93
+Rectangle -1 true false 195 105 240 105
+Polygon -16777216 true false 188 62 159 48 159 81 188 82
+Circle -16777216 true false 84 24 42
+Rectangle -7500403 true true 106 86 115 119
+Circle -16777216 true false 84 114 42
+Circle -16777216 true false 84 234 42
+Circle -7500403 false true 84 234 42
+Circle -7500403 false true 84 114 42
+Circle -7500403 false true 84 24 42
 
 turtle
 true
