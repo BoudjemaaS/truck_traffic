@@ -171,11 +171,13 @@ to BFS
 
       [
       foreach (sort [link-neighbors] of U)   [v ->
-        if (not member? v (visite))
+
+          if ((not member? v (visite)) and (([[open] of (link-with v)] of U) = true))
           [set visite lput v visite
         table:put parents [id] of v [id] of U
           set file lput v file
         ]
+
       ]
 
     ]
@@ -301,7 +303,7 @@ INPUTBOX
 1364
 284
 num-trucks
-2.0
+1.0
 1
 0
 Number

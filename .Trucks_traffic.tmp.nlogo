@@ -74,7 +74,7 @@ to set-nodes
           if do-we-link = 0[
             create-link-with turtle (count nodes - 1)[
               let is-open random 1000
-              ifelse is-open < 8
+              ifelse is-open <
               [set open false set color red]
               [set open true set color white]
             ]
@@ -171,11 +171,13 @@ to BFS
 
       [
       foreach (sort [link-neighbors] of U)   [v ->
-        if (not member? v (visite))
+
+          if ((not member? v (visite)) and (([[open] of (link-with v)] of U) = true))
           [set visite lput v visite
         table:put parents [id] of v [id] of U
           set file lput v file
         ]
+
       ]
 
     ]
@@ -301,7 +303,7 @@ INPUTBOX
 1364
 284
 num-trucks
-2.0
+1.0
 1
 0
 Number
