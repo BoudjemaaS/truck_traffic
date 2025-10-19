@@ -5,10 +5,10 @@ globals [
   created-nodes
   do-iter
   missions
-  time-tab
   debut
   time-travel
   mission-end
+  iteration
 
   aborded-missions
   vandalism
@@ -44,7 +44,6 @@ to setup
   set-patch-size 6
   set created-nodes 0
   set missions []
-  set time-tab []
 
   ; proba sur 1000
   set prob-nodes-connect 250
@@ -67,6 +66,7 @@ to setup
     set prob-failure 0
     set prob-vandalism 0
     set prob-hack 0
+    show "no event"
 
 
   ]
@@ -121,6 +121,7 @@ to set-nodes
 
           if random 1000 < prob-nodes-connect[
             create-link-with turtle (count nodes - 1)[]
+
           ]
 
       ]
@@ -134,7 +135,9 @@ to set-nodes
 
     ifelse random 1000 < prob-path-closed
       [set open false set color red]
-      [set open true set color white]]
+      [set open true set color white]
+
+  ]
 
 
 
@@ -168,7 +171,6 @@ to set-target
    BFS
 
 end
-
 
 
 to set-trucks
@@ -214,7 +216,6 @@ to-report build-chemin [parent cible]
 end
 
 
-
 to BFS
 
   ask trucks [
@@ -253,7 +254,7 @@ to BFS
     ]
     set chemin []
     show  "chemin non trouvé"
-    set aborded-missions aborded-missions + 1
+    set aborded-missions aborded-missions + 1 set no-path no-path + 1
 
   ]
 
@@ -261,10 +262,12 @@ to BFS
 end
 
 to start
-
+  set iteration 0
   repeat num-iter [
-
+    show iteration + 1
+    set iteration iteration + 1
     if random 1000 < prob-path-created [
+
       let n1 one-of nodes
       let n2 one-of nodes with [distance n1 >= min-distance and distance n1 <= max-distance and self != n1 and [(link-with n1)] of self = nobody]
       if (n2 != nobody) [ask n2 [create-link-with n1 [set color blue]] ]
@@ -288,22 +291,24 @@ to start
     while [do-iter = true][
       go
     ]
-    show "end go"
+
 
 
     ask trucks [if (random 1000 < prob-hack) [set time-travel time-travel * 0.75]]
 
-    set time-tab lput (time-travel) (time-tab)
+
+    do-plot
     set time-travel 0
+    set aborded-missions 0
+    set vandalism 0
+    set failure 0
 
 
 
   ]
-  show time-tab
+
 
 end
-
-
 
 
 to go
@@ -318,17 +323,17 @@ to go
 
       set color2 [pcolor] of patch xcor ycor
 
-      if [pcolor] of patch xcor ycor = green [set speed 15e-6]
+      if [pcolor] of patch xcor ycor = green [set speed 15e-4]
 
       if [pcolor] of patch xcor ycor = blue [
 
-        if ((random 1000 < prob-jam) and color1 = black) [show "slow" set time-travel time-travel * 1.3]
-        if ((random 1000 < prob-vandalism) and color1 = black) [show "vandal" set vandalism vandalism + 1 set aborded-missions aborded-missions + 1]
-        set speed 30e-6
+        if ((random 1000 < prob-jam) and color1 = black) [  set time-travel time-travel * 1.3]
+        if ((random 1000 < prob-vandalism) and color1 = black) [ set vandalism vandalism + 1 set aborded-missions aborded-missions + 1]
+        set speed 30e-4
       ]
 
-      if [pcolor] of patch xcor ycor = red [set speed 20e-6]
-      if [pcolor] of patch xcor ycor = black [set speed 90e-6]
+      if [pcolor] of patch xcor ycor = red [set speed 20e-4]
+      if [pcolor] of patch xcor ycor = black [set speed 90e-4]
 
 
 
@@ -352,7 +357,7 @@ to go
     ]
 
 
-    [if (failed = false) [show "fail" set mission-end mission-end + 1 set failed true set aborded-missions aborded-missions + 1 set failure failure + 1]]
+    [if (failed = false) [set mission-end mission-end + 1 set failed true set aborded-missions aborded-missions + 1 set failure failure + 1]]
 
 
     if mission-end = num-trucks [
@@ -365,6 +370,31 @@ to go
 
 
 end
+
+to do-plot
+
+  set-current-plot "aborded missions"
+  set-current-plot-pen "missions"
+  plotxy iteration aborded-missions
+
+  set-current-plot "completion time"
+  set-current-plot-pen "time"
+  plotxy iteration  time-travel * 10
+
+
+  set-current-plot "vandalism"
+  set-current-plot-pen "vandalism"
+  plotxy iteration  vandalism
+
+
+  set-current-plot "failure"
+  set-current-plot-pen "failure"
+  plotxy iteration  failure
+
+
+
+end
+
 @#$#@#$#@
 GRAPHICS-WINDOW
 32
@@ -394,10 +424,10 @@ ticks
 30.0
 
 BUTTON
-1283
-167
-1346
-200
+1598
+269
+1661
+302
 NIL
 setup
 NIL
@@ -411,21 +441,21 @@ NIL
 1
 
 INPUTBOX
-1208
-289
-1363
-349
+1293
+239
+1358
+299
 num-nodes
-60.0
+80.0
 1
 0
 Number
 
 INPUTBOX
-1373
-226
-1528
-286
+1361
+239
+1442
+299
 min-distance
 10.0
 1
@@ -433,10 +463,10 @@ min-distance
 Number
 
 INPUTBOX
-1371
-294
-1612
-354
+1445
+240
+1522
+300
 max-distance
 30.0
 1
@@ -444,38 +474,21 @@ max-distance
 Number
 
 INPUTBOX
-1209
-224
-1364
-284
+1351
+174
+1417
+234
 num-trucks
-2.0
+5.0
 1
 0
 Number
 
-BUTTON
-1205
-167
-1268
-200
-NIL
-go
-T
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
 INPUTBOX
-1172
-77
-1327
-137
+1294
+107
+1344
+167
 largeur
 65.0
 1
@@ -483,10 +496,10 @@ largeur
 Number
 
 INPUTBOX
-1332
-75
-1487
-135
+1348
+107
+1398
+167
 hauteur
 65.0
 1
@@ -494,38 +507,21 @@ hauteur
 Number
 
 INPUTBOX
-1035
-226
-1190
-286
+1294
+175
+1347
+235
 num-iter
-2.0
+50.0
 1
 0
 Number
 
 BUTTON
-1373
-506
-1461
-539
-NIL
-set-target
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-1182
-442
-1245
-475
+1527
+269
+1590
+302
 NIL
 start
 NIL
@@ -537,6 +533,78 @@ NIL
 NIL
 NIL
 1
+
+PLOT
+1295
+313
+1495
+463
+aborded missions
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"missions" 1.0 0 -16777216 true "" ""
+
+PLOT
+1502
+315
+1702
+465
+completion time
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"time" 1.0 0 -16777216 true "" ""
+
+PLOT
+1339
+471
+1499
+591
+vandalism
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"vandalism" 1.0 0 -16777216 true "" ""
+
+PLOT
+1500
+470
+1660
+590
+failure
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"failure" 1.0 0 -16777216 true "" ""
 
 @#$#@#$#@
 ## WHAT IS IT?
