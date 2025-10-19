@@ -5,18 +5,32 @@ globals [
   created-nodes
   do-iter
   missions
-  mean-time
   time-tab
   debut
   time-travel
-  fails
+  mission-end
+
+  aborded-missions
+  vandalism
+  failure
+  no-path
+
+  prob-nodes-connect
+  prob-path-closed
+  prob-path-created
+  prob-jam
+  prob-failure
+  prob-vandalism
+  prob-hack
+  prob-nothing
+
 ]
 
 breed [trucks truck]
 breed [nodes node]
 breed [flags flag]
 
-trucks-own [speed destination chemin source color1 color2 test-fail failed]
+trucks-own [speed destination chemin source color1 color2 test-fail failed  hack ended]
 links-own [open]
 nodes-own [id]
 
@@ -31,6 +45,33 @@ to setup
   set created-nodes 0
   set missions []
   set time-tab []
+
+  ; proba sur 1000
+  set prob-nodes-connect 250
+  set prob-path-closed 7
+  set prob-path-created 10
+  set prob-jam 100
+  set prob-failure 100
+  set prob-vandalism 30
+  set prob-hack 30
+  set prob-nothing 2
+  set aborded-missions 0
+
+  if random 1000 < prob-nothing [
+
+
+    set prob-nodes-connect 0
+    set prob-path-closed 0
+    set prob-path-created 0
+    set prob-jam 0
+    set prob-failure 0
+    set prob-vandalism 0
+    set prob-hack 0
+
+
+  ]
+
+
   set-nodes
   set-trucks
   BFS
@@ -77,8 +118,8 @@ to set-nodes
 
       ask turtle (count nodes - 1)[
         ask other nodes in-radius max-distance [
-          let do-we-link random 4
-          if do-we-link = 0[
+
+          if random 1000 < prob-nodes-connect[
             create-link-with turtle (count nodes - 1)[]
           ]
 
@@ -90,8 +131,8 @@ to set-nodes
     create-link-with min-one-of other nodes [distance myself]]
 
   ask links [
-    let is-open random 1000
-    ifelse is-open < 8
+
+    ifelse random 1000 < prob-path-closed
       [set open false set color red]
       [set open true set color white]]
 
@@ -212,6 +253,7 @@ to BFS
     ]
     set chemin []
     show  "chemin non trouvé"
+    set aborded-missions aborded-missions + 1 set no-path no-path + 1
 
   ]
 
@@ -222,7 +264,7 @@ to start
 
   repeat num-iter [
 
-    if random 100 = 0 [
+    if random 1000 < prob-path-created [
       let n1 one-of nodes
       let n2 one-of nodes with [distance n1 >= min-distance and distance n1 <= max-distance and self != n1 and [(link-with n1)] of self = nobody]
       if (n2 != nobody) [ask n2 [create-link-with n1 [set color blue]] ]
@@ -230,7 +272,8 @@ to start
 
     ask trucks [
       set test-fail false
-      if random 100 < 50 [set test-fail true set failed  false]
+      set ended false
+      if random 1000 < prob-failure [set test-fail true set failed  false]
     ]
 
 
@@ -240,11 +283,15 @@ to start
 
     reset-timer
     set debut timer
-
+    set mission-end 0
 
     while [do-iter = true][
       go
     ]
+    show "end go"
+
+
+    ask trucks [if (random 1000 < prob-hack) [set time-travel time-travel * 0.75]]
 
     set time-tab lput (time-travel) (time-tab)
     set time-travel 0
@@ -261,7 +308,7 @@ end
 
 to go
 
-  let mission-end 0
+
 
 
 
@@ -275,7 +322,8 @@ to go
 
       if [pcolor] of patch xcor ycor = blue [
 
-        if ((random 100 < 10) and color1 = black) [show "slow" set time-travel time-travel * 1.3]
+        if ((random 1000 < prob-jam) and color1 = black) [show "slow" set time-travel time-travel * 1.3]
+        if ((random 1000 < prob-vandalism) and color1 = black) [show "vandal" set vandalism vandalism + 1 set aborded-missions aborded-missions + 1]
         set speed 30e-6
       ]
 
@@ -300,10 +348,12 @@ to go
 
 
 
-      [set mission-end mission-end + 1]
+      [if ended = false [set mission-end mission-end + 1 set ended true]]
     ]
 
-    [if (failed = false) [show "fail" set mission-end mission-end + 1 set failed true]]
+
+    [if (failed = false) [show "fail" set mission-end mission-end + 1 set failed true set aborded-missions aborded-missions + 1 set failure failure + 1]]
+
 
     if mission-end = num-trucks [
       set do-iter false
@@ -472,10 +522,10 @@ NIL
 1
 
 BUTTON
-1188
-549
-1251
-582
+1182
+442
+1245
+475
 NIL
 start
 NIL

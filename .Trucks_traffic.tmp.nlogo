@@ -10,6 +10,11 @@ globals [
   time-travel
   mission-end
 
+  aborded-missions
+  vandalism
+  failure
+  no-path
+
   prob-nodes-connect
   prob-path-closed
   prob-path-created
@@ -25,7 +30,7 @@ breed [trucks truck]
 breed [nodes node]
 breed [flags flag]
 
-trucks-own [speed destination chemin source color1 color2 test-fail failed vandalism hack ended]
+trucks-own [speed destination chemin source color1 color2 test-fail failed  hack ended]
 links-own [open]
 nodes-own [id]
 
@@ -50,6 +55,7 @@ to setup
   set prob-vandalism 30
   set prob-hack 30
   set prob-nothing 2
+  set aborded-missions 0
 
   if random 1000 < prob-nothing [
 
@@ -247,6 +253,7 @@ to BFS
     ]
     set chemin []
     show  "chemin non trouvé"
+    set aborded-missions aborded-missions + 1
 
   ]
 
@@ -266,7 +273,7 @@ to start
     ask trucks [
       set test-fail false
       set ended false
-      if random 1000 <  [set test-fail true set failed  false]
+      if random 1000 < prob-failure [set test-fail true set failed  false]
     ]
 
 
@@ -316,7 +323,7 @@ to go
       if [pcolor] of patch xcor ycor = blue [
 
         if ((random 1000 < prob-jam) and color1 = black) [show "slow" set time-travel time-travel * 1.3]
-        if ((random 1000 < prob-vandalism) and color1 = black) [show "vandal" set vandalism vandalism + 1]
+        if ((random 1000 < prob-vandalism) and color1 = black) [show "vandal" set vandalism vandalism + 1 set aborded-missions aborded-missions + 1]
         set speed 30e-6
       ]
 
@@ -345,7 +352,7 @@ to go
     ]
 
 
-    [if (failed = false) [show "fail" set mission-end mission-end + 1 set failed true]]
+    [if (failed = false) [show "fail" set mission-end mission-end + 1 set failed true set aborded-missions aborded-missions + 1 set failure failure + 1]]
 
 
     if mission-end = num-trucks [
